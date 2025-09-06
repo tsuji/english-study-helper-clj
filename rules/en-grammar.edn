@@ -1,0 +1,133 @@
+[{:id "had-better"
+  :title "had better"
+  :level "A2-B1"
+  :signals
+  [{:type :token-seq
+    :pattern ["had" "better" {:upos "VERB" :feats {:VerbForm "Inf"}}]}]
+  :negative-signals []
+  :explain-template "【had better + 原形】〜したほうがよい（助言・軽い警告）。"
+  :tests {:positive ["We'd better go now." "You had better stay here."]
+          :negative ["He had a better idea."]}}
+
+ {:id "be-going-to"
+  :title "be going to + V"
+  :level "A2-B1"
+  :signals
+  [{:type :token-seq
+    :pattern [{:re "(?i)am|is|are|was|were" :field :form}
+              "going"
+              "to"
+              {:upos "VERB" :feats {:VerbForm "Inf"}}]}]
+  :negative-signals
+  [{:type :token-seq ; 「to + 名詞／前置詞句」を除外
+    :pattern [{:re "(?i)am|is|are|was|were" :field :form}
+              "going"
+              "to"
+              {:upos "NOUN"}]}]
+  :explain-template "【be going to + 原形】（近い未来）〜するつもり／〜しそう。"
+  :tests {:positive ["We are going to leave." "He is going to visit us."]
+          :negative ["I am going to the store."]}}
+
+ {:id "go-and-v"
+  :title "go and + V"
+  :level "A2-B1"
+  :signals
+  [{:type :token-seq
+    :pattern [{:lemma "go"} "and" {:upos "VERB"}]}]
+  :negative-signals []
+  :explain-template "【go and + 動詞原形】（口語）〜しに行く。"
+  :tests {:positive ["Let's go and see the doctor." "I went and bought it."]
+          :negative ["Go and the others were late."]}}
+
+ {:id "have-to"
+  :title "have to + V"
+  :level "A2-B1"
+  :signals
+  [{:type :token-seq
+    :pattern [{:lemma "have"} "to" {:upos "VERB" :feats {:VerbForm "Inf"}}]}]
+  :negative-signals []
+  :explain-template "【have to + 原形】〜しなければならない。"
+  :tests {:positive ["I have to go." "She had to leave early."]
+          :negative ["I have two books."]}}
+
+ {:id "used-to"
+  :title "used to + V"
+  :level "A2-B1"
+  :signals
+  [{:type :token-seq
+    :pattern ["used" "to" {:upos "VERB" :feats {:VerbForm "Inf"}}]}]
+  :negative-signals []
+  :explain-template "【used to + 原形】（以前は）〜したものだ／〜だった。"
+  :tests {:positive ["I used to live in Tokyo."]
+          :negative ["I used tools yesterday."]}}
+
+ {:id "present-perfect"
+  :title "現在完了（have + 過去分詞）"
+  :level "B1"
+  :signals
+  [{:type :token-seq
+    :pattern [{:lemma "have" :upos "AUX"}
+              {:upos "VERB" :xpos "VBN"}]}]
+  :negative-signals []
+  :explain-template "【have + 過去分詞】経験・完了・継続などを表す。"
+  :tests {:positive ["He has finished." "They have seen it."]
+          :negative ["They have a car."]}}
+
+ {:id "passive"
+  :title "受動態（be + 過去分詞）"
+  :level "B1"
+  :signals
+  [{:type :token-seq
+    :pattern [{:lemma "be" :upos "AUX"}
+              {:upos "VERB" :xpos "VBN"}]}]
+  :negative-signals []
+  :explain-template "【be + 過去分詞】〜される／〜された。"
+  :tests {:positive ["It was done." "The letter is written."]
+          :negative ["They were happy."]}}
+
+ {:id "progressive"
+  :title "進行形（be + V-ing）"
+  :level "A2"
+  :signals
+  [{:type :token-seq
+    :pattern [{:lemma "be" :upos "AUX"}
+              {:upos "VERB" :xpos "VBG"}]}]
+  :negative-signals []
+  :explain-template "【be + V-ing】〜しているところだ。"
+  :tests {:positive ["He is running." "They were talking."]
+          :negative ["They were students."]}}
+
+ {:id "modal-will"
+  :title "助動詞 will"
+  :level "A2"
+  :signals
+  [{:type :token-seq
+    :pattern [{:form "will"} {:upos "VERB" :feats {:VerbForm "Inf"}}]}]
+  :negative-signals []
+  :explain-template "【will + 原形】未来・意志・推測。"
+  :tests {:positive ["He will come." "It will rain."]
+          :negative ["Will Smith is famous."]}}
+
+ {:id "modal-should"
+  :title "助動詞 should"
+  :level "A2"
+  :signals
+  [{:type :token-seq
+    :pattern [{:form "should"} {:upos "VERB" :feats {:VerbForm "Inf"}}]}]
+  :negative-signals []
+  :explain-template "【should + 原形】〜すべきだ／〜したほうがよい。"
+  :tests {:positive ["You should go." "We should study."]
+          :negative ["Shoulders are important."]}}
+
+ {:id "to-inf-adv"
+  :title "to不定詞（副詞的用法）"
+  :level "A2-B1"
+  :signals
+  [{:type :token-seq
+    :pattern [{:form "to"} {:upos "VERB" :feats {:VerbForm "Inf"}}]}]
+  :negative-signals
+  [{:type :token-seq           ; 前置詞のto（ADP）を除外
+    :pattern [{:form "to"} {:upos "NOUN"}]}]
+  :explain-template "【to + 原形】目的・結果・評価など（副詞的）。"
+  :tests {:positive ["I went to see him." "He came to help."]
+          :negative ["I went to school."]}}]
