@@ -25,44 +25,55 @@
            (map (fn [[h r]] {:head (parse-long h) :rel r}))
            (vec))))
 
-(defn parse-conllu-sentences [^java.io.Reader rdr]
-  (let [init-lines (line-seq rdr)]
-    (loop [acc [] cur [] metas {} lineno 0 lines init-lines]
-      (if-let [l (first lines)]
-        (let [lines' (rest lines)
-              ln (inc lineno)]
-          (cond
-            (clojure.string/blank? l)
-            ;; 文終了
-            (recur (cond-> acc (seq cur) (conj {:meta metas :tokens cur}))
-                   [] {} ln lines')
+(defn parse-conllu-sentences
+  "Reader → ベクタ[{ :meta {...} :tokens [...] } ...]
+   - 空行で文を区切る
+   - `# key = value` を :meta に積む
+   - 1-2（MWT）と 1.1（空ノード）はスキップ"
+  [^java.io.Reader rdr]
+  (let [lines (line-seq rdr)
+        flush-sent (fn [{:keys [cur metas] :as st}]
+                     (if (seq (:tokens cur))
+                       (-> st
+                           (update :acc conj {:meta metas :tokens (:tokens cur)})
+                           (assoc :cur {:tokens []} :metas {}))
+                       st))
+        step (fn [{:keys [metas lineno] :as st} l]
+               (let [ln (inc (long lineno))]
+                 (cond
+                   (str/blank? l)
+                   (-> (flush-sent st) (assoc :lineno ln))
 
-            (clojure.string/starts-with? l "#")
-            (let [[_ k v] (re-matches #"#\s*([^=]+)\s*=\s*(.*)" l)
-                  metas' (if k (assoc metas (clojure.string/trim k)
-                                      (clojure.string/trim v))
-                             metas)]
-              (recur acc cur metas' ln lines'))
+                   (str/starts-with? l "#")
+                   (if-let [[_ k v] (re-matches #"#\s*([^=]+)\s*=\s*(.*)" l)]
+                     (-> st
+                         (assoc :lineno ln)
+                         (assoc :metas (assoc metas (str/trim k) (str/trim v))))
+                     (assoc st :lineno ln))
 
-            :else
-            (let [[id form lemma upos xpos feats head deprel deps misc]
-                  (clojure.string/split l #"\t")]
-              (if (re-matches #"\d+-\d+" id)         ; MWT 行はスキップ
-                (recur acc cur metas ln lines')
-                (let [tok {:id    (parse-long id)
-                           :form  (some-> form clojure.string/lower-case)
-                           :lemma (when (and lemma (not= "_" lemma))
-                                    (clojure.string/lower-case lemma))
-                           :upos  upos
-                           :xpos  xpos
-                           :feats (parse-feats feats)
-                           :head  (when (and head (not= "_" head)) (parse-long head))
-                           :deprel deprel
-                           :deps  (parse-deps deps)
-                           :misc  misc}]
-                  (recur acc (conj cur tok) metas ln lines'))))))
-        ;; EOF
-        (cond-> acc (seq cur) (conj {:meta metas :tokens cur}))))))
+                   :else
+                   (let [[id form lemma upos xpos feats head deprel deps misc]
+                         (str/split l #"\t")]
+                     (cond
+                       (re-matches #"\d+-\d+" id) (assoc st :lineno ln) ; MWT
+                       (re-matches #"\d+\.\d+" id) (assoc st :lineno ln) ; 空ノード
+                       :else
+                       (let [tok {:id    (parse-long id)
+                                  :form  (some-> form str/lower-case)
+                                  :lemma (when (and lemma (not= "_" lemma))
+                                           (str/lower-case lemma))
+                                  :upos  upos
+                                  :xpos  xpos
+                                  :feats (parse-feats feats)
+                                  :head  (when (and head (not= "_" head)) (parse-long head))
+                                  :deprel deprel
+                                  :deps  (parse-deps deps)
+                                  :misc  misc}]
+                         (-> st
+                             (assoc :lineno ln)
+                             (update-in [:cur :tokens] conj tok))))))))]
+    (let [final-state (reduce step {:acc [] :cur {:tokens []} :metas {} :lineno 0} lines)]
+      (:acc (flush-sent final-state)))))
 
 ;; ===========
 ;; ルールDSL読み込み
