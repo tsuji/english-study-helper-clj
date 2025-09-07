@@ -14,7 +14,7 @@
   (if (or (nil? s) (= "_" s)) {}
       (->> (str/split s #"\|")
            (map #(str/split % #"=" 2))
-           (map (fn [[k v]] [k v]))
+           (map (fn [[k v]] [(keyword k) v]))
            (into {}))))
 
 (defn parse-deps [s]
