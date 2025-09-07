@@ -178,19 +178,37 @@
      :rule (:id rule)
      :text (get-in sent [:meta "text"])}))
 
+(defn- ensure-parent-dirs! [path]
+  (let [f (io/file path)
+        parent (.getParentFile f)]
+    (when parent
+      (.mkdirs parent))
+    f))
+
+(defn- csv-quote [s]
+  ;; CSV の基本ルール：ダブルクオートで囲み、内部の " は "" にエスケープ
+  (str "\"" (str/replace (or s "") #"\"" "\"\"") "\""))
+
 (defn dump-hits-csv!
-  "ヒット結果を CSV に書き出し。デフォルト label=1 を付ける（あとで手で直す想定）
-   header: sentence_id,rule_id,label,text"
-  [path hits]
-  (with-open [w (clojure.java.io/writer path)]
-    (.write w "sentence_id,rule_id,label,text\n")
-    (doseq [{:keys [sid rule text]} hits]
-      (.write w
-              (format "%s,%s,%d,%s\n"
-                      sid rule 1
-                      (-> (or text "")
-                          (clojure.string/replace #"\"" "\"\"") ; quote escape
-                          (format "\"%s\"")))))))
+  "ヒット結果を CSV に追記/新規作成する。
+   - path: 出力ファイルパス
+   - hits: [{:sid .. :rule .. :text ..} ...]
+   オプション:
+   - :append? 既存ファイルに追記するか（既定 false）
+   既存 or 追記時でも、ファイルが空ならヘッダを書き込む。"
+  ([path hits] (dump-hits-csv! path hits {:append? false}))
+  ([path hits {:keys [append?] :or {append? false}}]
+   (let [f (ensure-parent-dirs! path)
+         exists (.exists f)
+         nonempty (and exists (> (.length f) 0))
+         header-needed (not (and append? nonempty))]
+     (with-open [w (io/writer f :append append?)]
+       (when header-needed
+         (.write w "sentence_id,rule_id,label,text\n"))
+       (doseq [{:keys [sid rule text]} hits]
+         (.write w
+                 (format "%s,%s,%d,%s\n"
+                         sid rule 1 (csv-quote text))))))))
 
 ;; REPL からの使い方例：
 ;; (def rules (load-rules "rules/en-grammar.edn"))
