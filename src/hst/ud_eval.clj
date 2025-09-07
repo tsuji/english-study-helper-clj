@@ -86,13 +86,19 @@
 ;; ===========
 ;; パターンマッチユーティリティ
 ;; ===========
-
 (defn match-field? [tok field val]
   (let [v (get tok field)]
     (cond
-      (and (string? val) (string? v)) (= v (str/lower-case val))
-      (and (map? val) (map? v)) (every? (fn [[k vv]] (= (get v k) vv)) val)
-      :else (= v val))))
+      ;; 文字列同士は大文字小文字を無視（両辺を lower-case）
+      (and (string? val) (string? v))
+      (= (str/lower-case v) (str/lower-case val))
+
+      ;; マップ同士（ここは主に :feats 想定）: 完全一致
+      (and (map? val) (map? v))
+      (every? (fn [[k vv]] (= (get v k) vv)) val)
+
+      :else
+      (= v val))))
 
 (defn match-item? [tok itm]
   ;; itm: string（form一致） or {:lemma .. :upos .. :xpos .. :feats {...}} or {:re "..." :field :form}
