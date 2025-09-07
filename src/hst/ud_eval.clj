@@ -163,6 +163,41 @@
     {:precision prec :recall rec :f1 f1
      :tp tp :fp fp :fn fn}))
 
+;; ヒット収集（gold 不要）
+(defn collect-hits
+  "returns [{:sid SID :rule RULE-ID :text sentence-text}]"
+  [ud-files rules]
+  (for [f ud-files
+        :let [sid-prefix (.getName (clojure.java.io/file f))
+              sents (with-open [r (clojure.java.io/reader f)]
+                      (parse-conllu-sentences r))]
+        [idx sent] (map-indexed vector sents)
+        rule rules
+        :when (rule-hit? rule sent)]
+    {:sid  (str sid-prefix ":" (inc idx))
+     :rule (:id rule)
+     :text (get-in sent [:meta "text"])}))
+
+(defn dump-hits-csv!
+  "ヒット結果を CSV に書き出し。デフォルト label=1 を付ける（あとで手で直す想定）
+   header: sentence_id,rule_id,label,text"
+  [path hits]
+  (with-open [w (clojure.java.io/writer path)]
+    (.write w "sentence_id,rule_id,label,text\n")
+    (doseq [{:keys [sid rule text]} hits]
+      (.write w
+              (format "%s,%s,%d,%s\n"
+                      sid rule 1
+                      (-> (or text "")
+                          (clojure.string/replace #"\"" "\"\"") ; quote escape
+                          (format "\"%s\"")))))))
+
+;; REPL からの使い方例：
+;; (def rules (load-rules "rules/en-grammar.edn"))
+;; (def hits (collect-hits ["resources/test.conllu"] rules))
+;; hits
+;; (dump-hits-csv! "resources/hits_seed.csv" hits)
+
 ;; ===========
 ;; 評価メイン
 ;; ===========
